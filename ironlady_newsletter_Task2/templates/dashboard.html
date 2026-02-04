@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Iron Lady Newsletter{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="text-white mb-3">
+            <i class="fas fa-chart-line"></i> Newsletter Dashboard
+        </h1>
+        <p class="text-white">Welcome to Iron Lady's Automated Newsletter System</p>
+    </div>
+</div>
+
+<div class="row" id="statsContainer">
+    <div class="col-md-3 mb-4">
+        <div class="stat-card text-center">
+            <div class="icon">
+                <i class="fas fa-users"></i>
+            </div>
+            <div class="number" id="totalSubscribers">0</div>
+            <div class="label">Total Subscribers</div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-4">
+        <div class="stat-card text-center">
+            <div class="icon">
+                <i class="fas fa-paper-plane"></i>
+            </div>
+            <div class="number" id="totalCampaigns">0</div>
+            <div class="label">Total Campaigns</div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-4">
+        <div class="stat-card text-center">
+            <div class="icon">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="number" id="sentCampaigns">0</div>
+            <div class="label">Sent Campaigns</div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-4">
+        <div class="stat-card text-center">
+            <div class="icon">
+                <i class="fas fa-clock"></i>
+            </div>
+            <div class="number" id="scheduledCampaigns">0</div>
+            <div class="label">Scheduled</div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-list"></i> Recent Campaigns
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Campaign Name</th>
+                                <th>Status</th>
+                                <th>Recipients</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recentCampaignsTable">
+                            <tr>
+                                <td colspan="4" class="text-center text-muted">Loading...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-robot"></i> AI Quick Actions
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="/templates" class="btn btn-primary">
+                        <i class="fas fa-magic"></i> Generate AI Newsletter
+                    </a>
+                    <a href="/subscribers" class="btn btn-outline-primary">
+                        <i class="fas fa-user-plus"></i> Add Subscribers
+                    </a>
+                    <a href="/campaigns" class="btn btn-outline-primary">
+                        <i class="fas fa-calendar-alt"></i> Schedule Campaign
+                    </a>
+                </div>
+                
+                <div class="mt-4 p-3 bg-light rounded">
+                    <h6 class="fw-bold"><i class="fas fa-info-circle"></i> Auto-Schedule Info</h6>
+                    <p class="small mb-0">
+                        Newsletters are automatically sent on the 1st of every month at 9:00 AM to all active subscribers.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-lightbulb"></i> About This System
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5><i class="fas fa-star text-warning"></i> Key Features</h5>
+                        <ul>
+                            <li><strong>AI-Powered Content:</strong> Generate newsletters using Claude AI</li>
+                            <li><strong>Subscriber Management:</strong> Full CRUD operations</li>
+                            <li><strong>Template Library:</strong> Create and reuse templates</li>
+                            <li><strong>Campaign Tracking:</strong> Monitor opens and clicks</li>
+                            <li><strong>Auto-Scheduling:</strong> Monthly automated sends</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h5><i class="fas fa-cog text-primary"></i> How It Works</h5>
+                        <ol>
+                            <li>Add subscribers to your mailing list</li>
+                            <li>Create templates or use AI to generate content</li>
+                            <li>Schedule campaigns or send immediately</li>
+                            <li>Track engagement and analytics</li>
+                            <li>Automated monthly newsletters go out automatically!</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    async function loadDashboardStats() {
+        try {
+            const response = await axios.get('/dashboard-stats');
+            const data = response.data;
+            
+            document.getElementById('totalSubscribers').textContent = data.total_subscribers;
+            document.getElementById('totalCampaigns').textContent = data.total_campaigns;
+            document.getElementById('sentCampaigns').textContent = data.sent_campaigns;
+            document.getElementById('scheduledCampaigns').textContent = data.scheduled_campaigns;
+            
+            const tableBody = document.getElementById('recentCampaignsTable');
+            if (data.recent_campaigns.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No campaigns yet</td></tr>';
+            } else {
+                tableBody.innerHTML = data.recent_campaigns.map(campaign => `
+                    <tr>
+                        <td>${campaign.name}</td>
+                        <td><span class="badge bg-${getStatusColor(campaign.status)}">${campaign.status}</span></td>
+                        <td>${campaign.recipients_count || 0}</td>
+                        <td>${campaign.sent_date || campaign.created_at}</td>
+                    </tr>
+                `).join('');
+            }
+        } catch (error) {
+            console.error('Error loading dashboard stats:', error);
+        }
+    }
+    
+    function getStatusColor(status) {
+        const colors = {
+            'draft': 'secondary',
+            'scheduled': 'warning',
+            'sent': 'success'
+        };
+        return colors[status] || 'secondary';
+    }
+    
+    // Load data on page load
+    loadDashboardStats();
+    
+    // Refresh every 30 seconds
+    setInterval(loadDashboardStats, 30000);
+</script>
+{% endblock %}

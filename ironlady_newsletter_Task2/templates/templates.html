@@ -1,0 +1,342 @@
+{% extends "base.html" %}
+
+{% block title %}Templates - Iron Lady Newsletter{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-6">
+        <h1 class="text-white">
+            <i class="fas fa-file-alt"></i> Newsletter Templates
+        </h1>
+    </div>
+    <div class="col-md-6 text-end">
+        <button class="btn btn-success btn-lg me-2" data-bs-toggle="modal" data-bs-target="#aiGenerateModal">
+            <i class="fas fa-magic"></i> AI Generate
+        </button>
+        <button class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#addTemplateModal">
+            <i class="fas fa-plus"></i> Create Template
+        </button>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12" id="templatesContainer">
+        <div class="text-center text-white">
+            <i class="fas fa-spinner fa-spin fa-3x"></i>
+            <p>Loading templates...</p>
+        </div>
+    </div>
+</div>
+
+<!-- AI Generate Modal -->
+<div class="modal fade" id="aiGenerateModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-robot"></i> AI Newsletter Generator</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="aiGenerateForm">
+                    <div class="mb-3">
+                        <label class="form-label">Newsletter Topic *</label>
+                        <input type="text" class="form-control" name="topic" placeholder="e.g., Women Leadership in 2026" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Program Focus</label>
+                        <select class="form-select" name="program_focus">
+                            <option value="">General Leadership</option>
+                            <option value="LEP">Leadership Essentials Program (LEP)</option>
+                            <option value="1-Crore Club">1-Crore Club</option>
+                            <option value="100 Board Members">100 Board Members</option>
+                            <option value="MBW">Master Business Warfare (MBW)</option>
+                        </select>
+                    </div>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> AI will generate a complete newsletter including subject line, content, program information, and call-to-action.
+                    </div>
+                </form>
+                <div id="aiGenerateLoading" class="text-center d-none">
+                    <i class="fas fa-spinner fa-spin fa-3x text-primary"></i>
+                    <p class="mt-3">AI is generating your newsletter... This may take a few moments.</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" onclick="generateWithAI()">
+                    <i class="fas fa-magic"></i> Generate with AI
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Template Modal -->
+<div class="modal fade" id="addTemplateModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-plus"></i> Create New Template</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addTemplateForm">
+                    <div class="mb-3">
+                        <label class="form-label">Template Title *</label>
+                        <input type="text" class="form-control" name="title" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Email Subject *</label>
+                        <input type="text" class="form-control" name="subject" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Content (HTML) *</label>
+                        <textarea class="form-control" name="content" rows="10" required></textarea>
+                        <small class="text-muted">You can use {{name}} to personalize with subscriber name</small>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="addTemplate()">
+                    <i class="fas fa-save"></i> Save Template
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Template Modal -->
+<div class="modal fade" id="editTemplateModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-edit"></i> Edit Template</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editTemplateForm">
+                    <input type="hidden" name="id" id="editId">
+                    <div class="mb-3">
+                        <label class="form-label">Template Title *</label>
+                        <input type="text" class="form-control" name="title" id="editTitle" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Email Subject *</label>
+                        <input type="text" class="form-control" name="subject" id="editSubject" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Content (HTML) *</label>
+                        <textarea class="form-control" name="content" id="editContent" rows="10" required></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="updateTemplate()">
+                    <i class="fas fa-save"></i> Save Changes
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Preview Modal -->
+<div class="modal fade" id="previewModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-eye"></i> Template Preview</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="previewContent"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let templates = [];
+    const addModal = new bootstrap.Modal(document.getElementById('addTemplateModal'));
+    const editModal = new bootstrap.Modal(document.getElementById('editTemplateModal'));
+    const aiModal = new bootstrap.Modal(document.getElementById('aiGenerateModal'));
+    const previewModal = new bootstrap.Modal(document.getElementById('previewModal'));
+    
+    async function loadTemplates() {
+        try {
+            const response = await axios.get('/api/templates');
+            templates = response.data;
+            renderTemplates();
+        } catch (error) {
+            console.error('Error loading templates:', error);
+        }
+    }
+    
+    function renderTemplates() {
+        const container = document.getElementById('templatesContainer');
+        
+        if (templates.length === 0) {
+            container.innerHTML = `
+                <div class="card">
+                    <div class="card-body text-center p-5">
+                        <i class="fas fa-file-alt fa-5x text-muted mb-3"></i>
+                        <h4>No Templates Yet</h4>
+                        <p class="text-muted">Create your first template or use AI to generate one!</p>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+        
+        container.innerHTML = templates.map(template => `
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h5 class="mb-1">${template.title}</h5>
+                            <p class="text-muted mb-1"><i class="fas fa-envelope"></i> ${template.subject}</p>
+                            <small class="text-muted">
+                                Created: ${template.created_at} | Updated: ${template.updated_at}
+                            </small>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <button class="btn btn-sm btn-outline-info" onclick="previewTemplate(${template.id})">
+                                <i class="fas fa-eye"></i> Preview
+                            </button>
+                            <button class="btn btn-sm btn-outline-primary" onclick="editTemplate(${template.id})">
+                                <i class="fas fa-edit"></i> Edit
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteTemplate(${template.id})">
+                                <i class="fas fa-trash"></i> Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+    
+    async function generateWithAI() {
+        const form = document.getElementById('aiGenerateForm');
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData);
+        
+        document.getElementById('aiGenerateLoading').classList.remove('d-none');
+        form.classList.add('d-none');
+        
+        try {
+            const response = await axios.post('/api/generate-content', data);
+            const content = response.data.content;
+            
+            // Extract subject from AI response (look for first line or heading)
+            const subjectMatch = content.match(/<h1>(.*?)<\/h1>/) || content.match(/Subject: (.*?)\n/);
+            const subject = subjectMatch ? subjectMatch[1] : `${data.topic} - Iron Lady Newsletter`;
+            
+            // Save as template
+            await axios.post('/api/templates', {
+                title: `AI Generated: ${data.topic}`,
+                subject: subject,
+                content: content
+            });
+            
+            aiModal.hide();
+            form.reset();
+            document.getElementById('aiGenerateLoading').classList.add('d-none');
+            form.classList.remove('d-none');
+            loadTemplates();
+            showAlert('AI-generated newsletter created successfully!', 'success');
+        } catch (error) {
+            console.error('Error generating content:', error);
+            alert('Failed to generate content with AI. Please check your API key.');
+            document.getElementById('aiGenerateLoading').classList.add('d-none');
+            form.classList.remove('d-none');
+        }
+    }
+    
+    async function addTemplate() {
+        const form = document.getElementById('addTemplateForm');
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData);
+        
+        try {
+            await axios.post('/api/templates', data);
+            addModal.hide();
+            form.reset();
+            loadTemplates();
+            showAlert('Template created successfully!', 'success');
+        } catch (error) {
+            console.error('Error adding template:', error);
+            alert('Failed to create template');
+        }
+    }
+    
+    function editTemplate(id) {
+        const template = templates.find(t => t.id === id);
+        if (!template) return;
+        
+        document.getElementById('editId').value = template.id;
+        document.getElementById('editTitle').value = template.title;
+        document.getElementById('editSubject').value = template.subject;
+        document.getElementById('editContent').value = template.content;
+        
+        editModal.show();
+    }
+    
+    async function updateTemplate() {
+        const form = document.getElementById('editTemplateForm');
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData);
+        const id = data.id;
+        delete data.id;
+        
+        try {
+            await axios.put(`/api/templates/${id}`, data);
+            editModal.hide();
+            loadTemplates();
+            showAlert('Template updated successfully!', 'success');
+        } catch (error) {
+            console.error('Error updating template:', error);
+            alert('Failed to update template');
+        }
+    }
+    
+    async function deleteTemplate(id) {
+        if (!confirm('Are you sure you want to delete this template?')) return;
+        
+        try {
+            await axios.delete(`/api/templates/${id}`);
+            loadTemplates();
+            showAlert('Template deleted successfully!', 'success');
+        } catch (error) {
+            console.error('Error deleting template:', error);
+            alert('Failed to delete template');
+        }
+    }
+    
+    function previewTemplate(id) {
+        const template = templates.find(t => t.id === id);
+        if (!template) return;
+        
+        const previewContent = template.content.replace('{{name}}', 'Preview User');
+        document.getElementById('previewContent').innerHTML = previewContent;
+        previewModal.show();
+    }
+    
+    function showAlert(message, type) {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3`;
+        alertDiv.style.zIndex = '9999';
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(alertDiv);
+        setTimeout(() => alertDiv.remove(), 3000);
+    }
+    
+    loadTemplates();
+</script>
+{% endblock %}
